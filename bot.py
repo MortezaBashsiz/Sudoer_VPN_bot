@@ -237,6 +237,20 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text("از لیست زیر انتخاب کن که چکار میخوای بکنی", reply_markup=reply_markup)
     return START_ROUTES
 
+async def process_url_and_send_results(update, conn, url, id)-> None:
+    if url == 0:
+        result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
+        await update.callback_query.message.reply_text(result)
+    else:
+        inc_url_used_count(conn, url)
+        insert_user_url(conn, id, url[0])
+        result=f"""
+        مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
+        """
+        await update.callback_query.message.reply_text(result)
+        result="`"+url[0]+"`"
+        await update.callback_query.message.reply_text(result, parse_mode="MarkdownV2")
+        
 async def vpn(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Show new choice of buttons"""
     query = update.callback_query
@@ -268,18 +282,7 @@ async def nur(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     if user_url == 0:
         url = get_url_byzone(conn, "NUR")
-        if url == 0:
-            result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
-            await update.callback_query.message.reply_text(result)
-        else:
-            inc_url_used_count(conn, url)
-            insert_user_url(conn, user.id, url[0])
-            result=f"""
-            مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
-            """
-            await update.callback_query.message.reply_text(result)
-            result=f"{url[0]}"
-            await update.callback_query.message.reply_text(result)
+        await process_url_and_send_results(update, conn, url, user.id)
     else:
         result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
         await update.callback_query.message.reply_text(result)
@@ -293,18 +296,7 @@ async def hel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     if user_url == 0:
         url = get_url_byzone(conn, "HEL")
-        if url == 0:
-            result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
-            await update.callback_query.message.reply_text(result)
-        else:
-            inc_url_used_count(conn, url)
-            insert_user_url(conn, user.id, url[0])
-            result=f"""
-            مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
-            """ 
-            await update.callback_query.message.reply_text(result)
-            result=f"{url[0]}"
-            await update.callback_query.message.reply_text(result)
+        await process_url_and_send_results(update, conn, url, user.id)
     else:
         result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
         await update.callback_query.message.reply_text(result)
@@ -318,18 +310,7 @@ async def flk(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     if user_url == 0:
         url = get_url_byzone(conn, "FLK")
-        if url == 0:
-            result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
-            await update.callback_query.message.reply_text(result)
-        else:
-            inc_url_used_count(conn, url)
-            insert_user_url(conn, user.id, url[0])
-            result=f"""
-            مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
-            """
-            await update.callback_query.message.reply_text(result)
-            result=f"{url[0]}"
-            await update.callback_query.message.reply_text(result)
+        await process_url_and_send_results(update, conn, url, user.id)
     else:
         result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
         await update.callback_query.message.reply_text(result)
@@ -360,180 +341,103 @@ async def arv(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     return START_ROUTES
 
 async def arvshn(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-     result=""
-     database = r"/opt/bot/bot.db"
-     conn = create_connection(database)
-     user = update.callback_query.from_user
-     user_url = check_if_user_has_url(conn, user.id, "ARVSHN")
-     query = update.callback_query
-     if user_url == 0:
-         url = get_url_byzone(conn, "ARVSHN")
-         if url == 0:
-             result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
-             await update.callback_query.message.reply_text(result)
-         else:
-             inc_url_used_count(conn, url)
-             insert_user_url(conn, user.id, url[0])
-             result=f"""
-             مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
-             """
-             await update.callback_query.message.reply_text(result)
-             result=f"{url[0]}"
-             await update.callback_query.message.reply_text(result)
-     else:
-         result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
-         await update.callback_query.message.reply_text(result)
+    result=""
+    database = r"/opt/bot/bot.db"
+    conn = create_connection(database)
+    user = update.callback_query.from_user
+    user_url = check_if_user_has_url(conn, user.id, "ARVSHN")
+    query = update.callback_query
+    if user_url == 0:
+        url = get_url_byzone(conn, "ARVSHN")
+        await process_url_and_send_results(update, conn, url, user.id)
+    else:
+        result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
+        await update.callback_query.message.reply_text(result)
 
 async def arvyek(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-     result=""
-     database = r"/opt/bot/bot.db"
-     conn = create_connection(database)
-     user = update.callback_query.from_user
-     user_url = check_if_user_has_url(conn, user.id, "ARVYEK")
-     query = update.callback_query
-     if user_url == 0:
-         url = get_url_byzone(conn, "ARVYEK")
-         print("aaaaaaaaaaaaaaaaaaaaaaaa"+str(url) )
-         if url == 0:
-             result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
-             await update.callback_query.message.reply_text(result)
-         else:
-             inc_url_used_count(conn, url)
-             insert_user_url(conn, user.id, url[0])
-             result=f"""
-             مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
-             """
-             await update.callback_query.message.reply_text(result)
-             result=f"{url[0]}"
-             await update.callback_query.message.reply_text(result)
-     else:
-         result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
-         await update.callback_query.message.reply_text(result)
+    result=""
+    database = r"/opt/bot/bot.db"
+    conn = create_connection(database)
+    user = update.callback_query.from_user
+    user_url = check_if_user_has_url(conn, user.id, "ARVYEK")
+    query = update.callback_query
+    if user_url == 0:
+        url = get_url_byzone(conn, "ARVYEK")
+        print("aaaaaaaaaaaaaaaaaaaaaaaa"+str(url) )
+        await process_url_and_send_results(update, conn, url, user.id)
+    else:
+        result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
+        await update.callback_query.message.reply_text(result)
 
 async def arvdo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-     result=""
-     database = r"/opt/bot/bot.db"
-     conn = create_connection(database)
-     user = update.callback_query.from_user
-     user_url = check_if_user_has_url(conn, user.id, "ARVDO")
-     query = update.callback_query
-     if user_url == 0:
-         url = get_url_byzone(conn, "ARVDO")
-         if url == 0:
-             result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
-             await update.callback_query.message.reply_text(result)
-         else:
-             inc_url_used_count(conn, url)
-             insert_user_url(conn, user.id, url[0])
-             result=f"""
-             مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
-             """
-             await update.callback_query.message.reply_text(result)
-             result=f"{url[0]}"
-             await update.callback_query.message.reply_text(result)
-     else:
-         result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
-         await update.callback_query.message.reply_text(result)
+    result=""
+    database = r"/opt/bot/bot.db"
+    conn = create_connection(database)
+    user = update.callback_query.from_user
+    user_url = check_if_user_has_url(conn, user.id, "ARVDO")
+    query = update.callback_query
+    if user_url == 0:
+        url = get_url_byzone(conn, "ARVDO")
+        await process_url_and_send_results(update, conn, url, user.id)
+    else:
+        result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
+        await update.callback_query.message.reply_text(result)
 
 async def arvse(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-     result=""
-     database = r"/opt/bot/bot.db"
-     conn = create_connection(database)
-     user = update.callback_query.from_user
-     user_url = check_if_user_has_url(conn, user.id, "ARVSE")
-     query = update.callback_query
-     if user_url == 0:
-         url = get_url_byzone(conn, "ARVSE")
-         if url == 0:
-             result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
-             await update.callback_query.message.reply_text(result)
-         else:
-             inc_url_used_count(conn, url)
-             insert_user_url(conn, user.id, url[0])
-             result=f"""
-             مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
-             """
-             await update.callback_query.message.reply_text(result)
-             result=f"{url[0]}"
-             await update.callback_query.message.reply_text(result)
-     else:
-         result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
-         await update.callback_query.message.reply_text(result)
+    result=""
+    database = r"/opt/bot/bot.db"
+    conn = create_connection(database)
+    user = update.callback_query.from_user
+    user_url = check_if_user_has_url(conn, user.id, "ARVSE")
+    query = update.callback_query
+    if user_url == 0:
+        url = get_url_byzone(conn, "ARVSE")
+        await process_url_and_send_results(update, conn, url, user.id)
+    else:
+        result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
+        await update.callback_query.message.reply_text(result)
 
 async def arvchar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-     result=""
-     database = r"/opt/bot/bot.db"
-     conn = create_connection(database)
-     user = update.callback_query.from_user
-     user_url = check_if_user_has_url(conn, user.id, "ARVCHAR")
-     query = update.callback_query
-     if user_url == 0:
-         url = get_url_byzone(conn, "ARVCHAR")
-         if url == 0:
-             result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
-             await update.callback_query.message.reply_text(result)
-         else:
-             inc_url_used_count(conn, url)
-             insert_user_url(conn, user.id, url[0])
-             result=f"""
-             مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
-             """
-             await update.callback_query.message.reply_text(result)
-             result=f"{url[0]}"
-             await update.callback_query.message.reply_text(result)
-     else:
-         result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
-         await update.callback_query.message.reply_text(result)
+    result=""
+    database = r"/opt/bot/bot.db"
+    conn = create_connection(database)
+    user = update.callback_query.from_user
+    user_url = check_if_user_has_url(conn, user.id, "ARVCHAR")
+    query = update.callback_query
+    if user_url == 0:
+        url = get_url_byzone(conn, "ARVCHAR")
+        await process_url_and_send_results(update, conn, url, user.id)
+    else:
+        result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
+        await update.callback_query.message.reply_text(result)
 
 async def arvpanj(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-     result=""
-     database = r"/opt/bot/bot.db"
-     conn = create_connection(database)
-     user = update.callback_query.from_user
-     user_url = check_if_user_has_url(conn, user.id, "ARVPANJ")
-     query = update.callback_query
-     if user_url == 0:
-         url = get_url_byzone(conn, "ARVPANJ")
-         if url == 0:
-             result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
-             await update.callback_query.message.reply_text(result)
-         else:
-             inc_url_used_count(conn, url)
-             insert_user_url(conn, user.id, url[0])
-             result=f"""
-             مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
-             """
-             await update.callback_query.message.reply_text(result)
-             result=f"{url[0]}"
-             await update.callback_query.message.reply_text(result)
-     else:
-         result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
-         await update.callback_query.message.reply_text(result)
+    result=""
+    database = r"/opt/bot/bot.db"
+    conn = create_connection(database)
+    user = update.callback_query.from_user
+    user_url = check_if_user_has_url(conn, user.id, "ARVPANJ")
+    query = update.callback_query
+    if user_url == 0:
+        url = get_url_byzone(conn, "ARVPANJ")
+        await process_url_and_send_results(update, conn, url, user.id)
+    else:
+        result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
+        await update.callback_query.message.reply_text(result)
 
 async def arvjom(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-     result=""
-     database = r"/opt/bot/bot.db"
-     conn = create_connection(database)
-     user = update.callback_query.from_user
-     user_url = check_if_user_has_url(conn, user.id, "ARVJOM")
-     query = update.callback_query
-     if user_url == 0:
-         url = get_url_byzone(conn, "ARVJOM")
-         if url == 0:
-             result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
-             await update.callback_query.message.reply_text(result)
-         else:
-             inc_url_used_count(conn, url)
-             insert_user_url(conn, user.id, url[0])
-             result=f"""
-             مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
-             """
-             await update.callback_query.message.reply_text(result)
-             result=f"{url[0]}"
-             await update.callback_query.message.reply_text(result)
-     else:
-         result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
-         await update.callback_query.message.reply_text(result)
+    result=""
+    database = r"/opt/bot/bot.db"
+    conn = create_connection(database)
+    user = update.callback_query.from_user
+    user_url = check_if_user_has_url(conn, user.id, "ARVJOM")
+    query = update.callback_query
+    if user_url == 0:
+        url = get_url_byzone(conn, "ARVJOM")
+        await process_url_and_send_results(update, conn, url, user.id)
+    else:
+        result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
+        await update.callback_query.message.reply_text(result)
 
 async def donate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Show new choice of buttons"""
@@ -604,8 +508,8 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     فیلترشکنهای زیر برای توست
     """
     await update.callback_query.message.reply_text(text)
-    text=f"{url}"
-    await update.callback_query.message.reply_text(text)
+    text="`"+url+"`"
+    await update.callback_query.message.reply_text(text, parse_mode="MarkdownV2")
 
 def main() -> None:
     application = Application.builder().token("numbernumbernumber:stringstringstringstring:").build()
