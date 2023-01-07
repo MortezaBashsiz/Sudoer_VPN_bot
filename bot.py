@@ -71,27 +71,20 @@ def inc_url_used_count(conn, url):
     conn.commit()
 
 def get_url_byzone(conn, zone):
-    zone_reg="null"
-    if zone == "NUR":
-        zone_reg="scherehtznur"
-    if zone == "HEL":
-        zone_reg="scherehtzhel"
-    if zone == "FLK":
-        zone_reg="scherehtzflk"
-    if zone == "ARVSHN":
-        zone_reg=".shanbe"
-    if zone == "ARVYEK":
-        zone_reg="yekshanbe"
-    if zone == "ARVDO":
-        zone_reg="doshanbe"
-    if zone == "ARVSE":
-        zone_reg="seshanbe"
-    if zone == "ARVCHAR":
-        zone_reg="charshanbe"
-    if zone == "ARVPANJ":
-        zone_reg="panjshanbe"
-    if zone == "ARVJOM":
-        zone_reg="jome"
+    zone_dict = {'NUR': 'scherehtznur',
+                 'HEL': 'scherehtzhel',
+                 'FLK': 'scherehtzflk',
+                 'ARVSHN': '.shanbe',
+                 'ARVYEK': 'yekshanbe',
+                 'ARVDO': 'doshanbe',
+                 'ARVSE': 'seshanbe',
+                 'ARVCHAR': 'charshanbe',
+                 'ARVPANJ': 'panjshanbe',
+                 'ARVJOM': 'jome'}
+    try:
+        zone_reg = zone_dict[zone]
+    except:
+        zone_reg = 'null'
     sql = "SELECT url FROM urls WHERE hostname LIKE ? AND used_count < 50 ORDER BY used_count  ASC, RANDOM() limit 1"
     cur = conn.cursor()
     cur.execute(sql, ("%"+zone_reg+"%",))
@@ -103,27 +96,20 @@ def get_url_byzone(conn, zone):
         return result
 
 def check_if_user_has_url(conn, id, zone):
-    zone_reg="null"
-    if zone == "NUR":
-        zone_reg="scherehtznur"
-    if zone == "HEL":
-        zone_reg="scherehtzhel"
-    if zone == "FLK":
-        zone_reg="scherehtzflk"
-    if zone == "ARVSHN":
-        zone_reg=".shanbe"
-    if zone == "ARVYEK":
-        zone_reg="yekshanbe"
-    if zone == "ARVDO":
-        zone_reg="doshanbe"
-    if zone == "ARVSE":
-        zone_reg="seshanbe"
-    if zone == "ARVCHAR":
-        zone_reg="charshanbe"
-    if zone == "ARVPANJ":
-        zone_reg="panjshanbe"
-    if zone == "ARVJOM":
-        zone_reg="jome"
+    zone_dict = {'NUR': 'scherehtznur',
+                 'HEL': 'scherehtzhel',
+                 'FLK': 'scherehtzflk',
+                 'ARVSHN': '.shanbe',
+                 'ARVYEK': 'yekshanbe',
+                 'ARVDO': 'doshanbe',
+                 'ARVSE': 'seshanbe',
+                 'ARVCHAR': 'charshanbe',
+                 'ARVPANJ': 'panjshanbe',
+                 'ARVJOM': 'jome'}
+    try:
+        zone_reg = zone_dict[zone]
+    except:
+        zone_reg = 'null'
     sql = ''' SELECT user_url.url FROM user_url LEFT JOIN urls ON user_url.url = urls.url WHERE user_url.user = ? AND urls.hostname like ? '''
     cur = conn.cursor()
     cur.execute(sql, (id,"%"+zone_reg+"%"))
