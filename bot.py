@@ -151,9 +151,7 @@ def get_user_url_by_id(conn, id):
     sql_result=cur.fetchall()
     result=""
     if len(sql_result) != 0:
-        for url in sql_result:
-            result = result + "\n"+url[0]+"\n"
-        return result
+        return sql_result
     else:
         return 0
 
@@ -396,14 +394,15 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.callback_query.from_user
     database = r"/opt/bot/bot.db"
     conn = create_connection(database)
-    url = get_user_url_by_id(conn, user.id)
+    urls = get_user_url_by_id(conn, user.id)
     query = update.callback_query
     text=f"""
     فیلترشکنهای زیر برای توست
     """
     await update.callback_query.message.reply_text(text)
-    text=f"{url}"
-    await update.callback_query.message.reply_text(text)
+    for url in urls:
+        text=f"{url[0]}"
+        await update.callback_query.message.reply_text(text)
 
 def main() -> None:
     application = Application.builder().token("numbernumbernumber:stringstringstringstring:").build()
