@@ -213,7 +213,28 @@ logger = logging.getLogger(__name__)
 # Stages
 START_ROUTES, END_ROUTES = range(2)
 # Callback data
-VPN, DONATE, EURO, TETHER, SERVER, ASK, HELP, STATUS, NUR, FLK, HEL, ARV, ARVSHN, ARVYEK, ARVDO, ARVSE, ARVCHAR, ARVPANJ, ARVJOM = range(19)
+keys = {
+    "VPN" : "VPN",
+    "DONATE" : "DONATE",
+    "EURO" : "EURO",
+    "TETHER" : "TETHER",
+    "SERVER" : "SERVER",
+    "ASK" : "ASK",
+    "HELP" : "HELP",
+    "STATUS" : "STATUS",
+    # vpn regions
+    "NUR" : "NUR",
+    "FLK" : "FLK",
+    "HEL" : "HEL",
+    "ARV" : "ARV",
+    "ARVSHN" : "ARVSHN",
+    "ARVYEK" : "ARVYEK",
+    "ARVDO" : "ARVDO",
+    "ARVSE" : "ARVSE",
+    "ARVCHAR" : "ARVCHAR",
+    "ARVPANJ" : "ARVPANJ",
+    "ARVJOM" : "ARVJOM",
+}
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -226,12 +247,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     insert_user(conn, user)
     keyboard = [
         [
-            InlineKeyboardButton("میخوام کمک بکنم",       callback_data=str(DONATE)),
-            InlineKeyboardButton("میخوام فیلترشکن بگیرم", callback_data=str(VPN)),
+            InlineKeyboardButton("میخوام کمک بکنم",       callback_data=keys['DONATE']),
+            InlineKeyboardButton("میخوام فیلترشکن بگیرم", callback_data=keys['VPN']),
         ],
-        [InlineKeyboardButton("وضعیت من چیه؟", callback_data=str(STATUS))],
-        [InlineKeyboardButton("راهنمای استفاده", callback_data=str(HELP))],
-        [InlineKeyboardButton("سوال داشتم", callback_data=str(ASK))],
+        [InlineKeyboardButton("وضعیت من چیه؟", callback_data=keys['STATUS'])],
+        [InlineKeyboardButton("راهنمای استفاده", callback_data=keys['HELP'])],
+        [InlineKeyboardButton("سوال داشتم", callback_data=keys['ASK'])],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text("از لیست زیر انتخاب کن که چکار میخوای بکنی", reply_markup=reply_markup)
@@ -243,14 +264,14 @@ async def vpn(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await query.answer()
     keyboard = [
         [
-            InlineKeyboardButton("ایران - داخلی", callback_data=str(ARV)),
+            InlineKeyboardButton("ایران - داخلی", callback_data=keys['ARV']),
         ],
         [    
-            InlineKeyboardButton("آلمان - نورنبرگ", callback_data=str(NUR)),
+            InlineKeyboardButton("آلمان - نورنبرگ", callback_data=f"vpn:{keys['NUR']}"),
         ],
         [
-            InlineKeyboardButton("آلمان - فالکنشتاین", callback_data=str(FLK)),
-            InlineKeyboardButton("فنلاند - هلسینکی", callback_data=str(HEL)),
+            InlineKeyboardButton("آلمان - فالکنشتاین", callback_data=f"vpn:{keys['FLK']}"),
+            InlineKeyboardButton("فنلاند - هلسینکی", callback_data=f"vpn:{keys['HEL']}"),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -259,65 +280,17 @@ async def vpn(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     )
     return START_ROUTES
 
-async def nur(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def get_config(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     result=""
     database = r"/opt/bot/bot.db"
     conn = create_connection(database)
     user = update.callback_query.from_user
-    user_url = check_if_user_has_url(conn, user.id, "NUR")
     query = update.callback_query
+    region = query.data.split(':')[1]
+    user_url = check_if_user_has_url(conn, user.id, region)
+    
     if user_url == 0:
-        url = get_url_byzone(conn, "NUR")
-        if url == 0:
-            result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
-            await update.callback_query.message.reply_text(result)
-        else:
-            inc_url_used_count(conn, url)
-            insert_user_url(conn, user.id, url[0])
-            result=f"""
-            مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
-            """
-            await update.callback_query.message.reply_text(result)
-            result=f"{url[0]}"
-            await update.callback_query.message.reply_text(result)
-    else:
-        result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
-        await update.callback_query.message.reply_text(result)
-
-async def hel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    result=""
-    database = r"/opt/bot/bot.db"
-    conn = create_connection(database)
-    user = update.callback_query.from_user
-    user_url = check_if_user_has_url(conn, user.id, "HEL")
-    query = update.callback_query
-    if user_url == 0:
-        url = get_url_byzone(conn, "HEL")
-        if url == 0:
-            result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
-            await update.callback_query.message.reply_text(result)
-        else:
-            inc_url_used_count(conn, url)
-            insert_user_url(conn, user.id, url[0])
-            result=f"""
-            مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
-            """ 
-            await update.callback_query.message.reply_text(result)
-            result=f"{url[0]}"
-            await update.callback_query.message.reply_text(result)
-    else:
-        result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
-        await update.callback_query.message.reply_text(result)
-
-async def flk(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    result=""
-    database = r"/opt/bot/bot.db"
-    conn = create_connection(database)
-    user = update.callback_query.from_user
-    user_url = check_if_user_has_url(conn, user.id, "FLK")
-    query = update.callback_query
-    if user_url == 0:
-        url = get_url_byzone(conn, "FLK")
+        url = get_url_byzone(conn, region)
         if url == 0:
             result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
             await update.callback_query.message.reply_text(result)
@@ -340,17 +313,17 @@ async def arv(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await query.answer()
     keyboard = [
         [
-            InlineKeyboardButton("شنبه", callback_data=str(ARVSHN)),
-            InlineKeyboardButton("یک شنبه", callback_data=str(ARVYEK)),
-            InlineKeyboardButton("دو شنبه", callback_data=str(ARVDO)),
+            InlineKeyboardButton("شنبه", callback_data=f"vpn:{keys['ARVSHN']}"),
+            InlineKeyboardButton("یک شنبه", callback_data=f"vpn:{keys['ARVYEK']}"),
+            InlineKeyboardButton("دو شنبه", callback_data=f"vpn:{keys['ARVDO']}"),
         ],
         [    
-            InlineKeyboardButton("سه شنبه", callback_data=str(ARVSE)),
-            InlineKeyboardButton("چهار شنبه", callback_data=str(ARVCHAR)),
-            InlineKeyboardButton("پنج شنبه", callback_data=str(ARVPANJ)),
+            InlineKeyboardButton("سه شنبه", callback_data=f"vpn:{keys['ARVSE']}"),
+            InlineKeyboardButton("چهار شنبه", callback_data=f"vpn:{keys['ARVCHAR']}"),
+            InlineKeyboardButton("پنج شنبه", callback_data=f"vpn:{keys['ARVPANJ']}"),
         ],
         [
-            InlineKeyboardButton("جمعه", callback_data=str(ARVJOM)),
+            InlineKeyboardButton("جمعه", callback_data=f"vpn:{keys['ARVJOM']}"),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -359,181 +332,6 @@ async def arv(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
     return START_ROUTES
 
-async def arvshn(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-     result=""
-     database = r"/opt/bot/bot.db"
-     conn = create_connection(database)
-     user = update.callback_query.from_user
-     user_url = check_if_user_has_url(conn, user.id, "ARVSHN")
-     query = update.callback_query
-     if user_url == 0:
-         url = get_url_byzone(conn, "ARVSHN")
-         if url == 0:
-             result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
-             await update.callback_query.message.reply_text(result)
-         else:
-             inc_url_used_count(conn, url)
-             insert_user_url(conn, user.id, url[0])
-             result=f"""
-             مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
-             """
-             await update.callback_query.message.reply_text(result)
-             result=f"{url[0]}"
-             await update.callback_query.message.reply_text(result)
-     else:
-         result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
-         await update.callback_query.message.reply_text(result)
-
-async def arvyek(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-     result=""
-     database = r"/opt/bot/bot.db"
-     conn = create_connection(database)
-     user = update.callback_query.from_user
-     user_url = check_if_user_has_url(conn, user.id, "ARVYEK")
-     query = update.callback_query
-     if user_url == 0:
-         url = get_url_byzone(conn, "ARVYEK")
-         print("aaaaaaaaaaaaaaaaaaaaaaaa"+str(url) )
-         if url == 0:
-             result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
-             await update.callback_query.message.reply_text(result)
-         else:
-             inc_url_used_count(conn, url)
-             insert_user_url(conn, user.id, url[0])
-             result=f"""
-             مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
-             """
-             await update.callback_query.message.reply_text(result)
-             result=f"{url[0]}"
-             await update.callback_query.message.reply_text(result)
-     else:
-         result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
-         await update.callback_query.message.reply_text(result)
-
-async def arvdo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-     result=""
-     database = r"/opt/bot/bot.db"
-     conn = create_connection(database)
-     user = update.callback_query.from_user
-     user_url = check_if_user_has_url(conn, user.id, "ARVDO")
-     query = update.callback_query
-     if user_url == 0:
-         url = get_url_byzone(conn, "ARVDO")
-         if url == 0:
-             result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
-             await update.callback_query.message.reply_text(result)
-         else:
-             inc_url_used_count(conn, url)
-             insert_user_url(conn, user.id, url[0])
-             result=f"""
-             مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
-             """
-             await update.callback_query.message.reply_text(result)
-             result=f"{url[0]}"
-             await update.callback_query.message.reply_text(result)
-     else:
-         result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
-         await update.callback_query.message.reply_text(result)
-
-async def arvse(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-     result=""
-     database = r"/opt/bot/bot.db"
-     conn = create_connection(database)
-     user = update.callback_query.from_user
-     user_url = check_if_user_has_url(conn, user.id, "ARVSE")
-     query = update.callback_query
-     if user_url == 0:
-         url = get_url_byzone(conn, "ARVSE")
-         if url == 0:
-             result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
-             await update.callback_query.message.reply_text(result)
-         else:
-             inc_url_used_count(conn, url)
-             insert_user_url(conn, user.id, url[0])
-             result=f"""
-             مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
-             """
-             await update.callback_query.message.reply_text(result)
-             result=f"{url[0]}"
-             await update.callback_query.message.reply_text(result)
-     else:
-         result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
-         await update.callback_query.message.reply_text(result)
-
-async def arvchar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-     result=""
-     database = r"/opt/bot/bot.db"
-     conn = create_connection(database)
-     user = update.callback_query.from_user
-     user_url = check_if_user_has_url(conn, user.id, "ARVCHAR")
-     query = update.callback_query
-     if user_url == 0:
-         url = get_url_byzone(conn, "ARVCHAR")
-         if url == 0:
-             result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
-             await update.callback_query.message.reply_text(result)
-         else:
-             inc_url_used_count(conn, url)
-             insert_user_url(conn, user.id, url[0])
-             result=f"""
-             مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
-             """
-             await update.callback_query.message.reply_text(result)
-             result=f"{url[0]}"
-             await update.callback_query.message.reply_text(result)
-     else:
-         result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
-         await update.callback_query.message.reply_text(result)
-
-async def arvpanj(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-     result=""
-     database = r"/opt/bot/bot.db"
-     conn = create_connection(database)
-     user = update.callback_query.from_user
-     user_url = check_if_user_has_url(conn, user.id, "ARVPANJ")
-     query = update.callback_query
-     if user_url == 0:
-         url = get_url_byzone(conn, "ARVPANJ")
-         if url == 0:
-             result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
-             await update.callback_query.message.reply_text(result)
-         else:
-             inc_url_used_count(conn, url)
-             insert_user_url(conn, user.id, url[0])
-             result=f"""
-             مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
-             """
-             await update.callback_query.message.reply_text(result)
-             result=f"{url[0]}"
-             await update.callback_query.message.reply_text(result)
-     else:
-         result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
-         await update.callback_query.message.reply_text(result)
-
-async def arvjom(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-     result=""
-     database = r"/opt/bot/bot.db"
-     conn = create_connection(database)
-     user = update.callback_query.from_user
-     user_url = check_if_user_has_url(conn, user.id, "ARVJOM")
-     query = update.callback_query
-     if user_url == 0:
-         url = get_url_byzone(conn, "ARVJOM")
-         if url == 0:
-             result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
-             await update.callback_query.message.reply_text(result)
-         else:
-             inc_url_used_count(conn, url)
-             insert_user_url(conn, user.id, url[0])
-             result=f"""
-             مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
-             """
-             await update.callback_query.message.reply_text(result)
-             result=f"{url[0]}"
-             await update.callback_query.message.reply_text(result)
-     else:
-         result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
-         await update.callback_query.message.reply_text(result)
 
 async def donate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Show new choice of buttons"""
@@ -541,9 +339,9 @@ async def donate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await query.answer()
     keyboard = [
         [
-            InlineKeyboardButton("دونیت با پول", callback_data=str(EURO)),
-            InlineKeyboardButton("دونیت با کریپتو", callback_data=str(TETHER)),
-            InlineKeyboardButton("دونیت با سرور", callback_data=str(SERVER)),
+            InlineKeyboardButton("دونیت با پول", callback_data=keys['EURO']),
+            InlineKeyboardButton("دونیت با کریپتو", callback_data=keys['TETHER']),
+            InlineKeyboardButton("دونیت با سرور", callback_data=keys['SERVER']),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -614,25 +412,18 @@ def main() -> None:
         entry_points=[CommandHandler("start", start)],
         states={
             START_ROUTES: [
-                CallbackQueryHandler(vpn, pattern="^" + str(VPN) + "$"),
-                CallbackQueryHandler(nur, pattern="^" + str(NUR) + "$"),
-                CallbackQueryHandler(hel, pattern="^" + str(HEL) + "$"),
-                CallbackQueryHandler(flk, pattern="^" + str(FLK) + "$"),
-                CallbackQueryHandler(arv, pattern="^" + str(ARV) + "$"),
-                CallbackQueryHandler(arvshn, pattern="^" + str(ARVSHN) + "$"),
-                CallbackQueryHandler(arvyek, pattern="^" + str(ARVYEK) + "$"),
-                CallbackQueryHandler(arvdo, pattern="^" + str(ARVDO) + "$"),
-                CallbackQueryHandler(arvse, pattern="^" + str(ARVSE) + "$"),
-                CallbackQueryHandler(arvchar, pattern="^" + str(ARVCHAR) + "$"),
-                CallbackQueryHandler(arvpanj, pattern="^" + str(ARVPANJ) + "$"),
-                CallbackQueryHandler(arvjom, pattern="^" + str(ARVJOM) + "$"),
-                CallbackQueryHandler(donate, pattern="^" + str(DONATE) + "$"),
-                CallbackQueryHandler(tether, pattern="^" + str(TETHER) + "$"),
-                CallbackQueryHandler(server, pattern="^" + str(SERVER) + "$"),
-                CallbackQueryHandler(euro, pattern="^" + str(EURO) + "$"),
-                CallbackQueryHandler(ask, pattern="^" + str(ASK) + "$"),
-                CallbackQueryHandler(help, pattern="^" + str(HELP) + "$"),
-                CallbackQueryHandler(status, pattern="^" + str(STATUS) + "$"),
+                
+                CallbackQueryHandler(get_config, pattern="^vpn:"),
+                CallbackQueryHandler(arv, pattern="^{}$".format(keys['ARV'])),
+                
+                CallbackQueryHandler(vpn, pattern="^{}$".format(keys['VPN'])),
+                CallbackQueryHandler(donate, pattern="^{}$".format(keys['DONATE'])),
+                CallbackQueryHandler(tether, pattern="^{}$".format(keys['TETHER'])),
+                CallbackQueryHandler(server, pattern="^{}$".format(keys['SERVER'])),
+                CallbackQueryHandler(euro, pattern="^{}$".format(keys['EURO'])),
+                CallbackQueryHandler(ask, pattern="^{}$".format(keys['ASK'])),
+                CallbackQueryHandler(help, pattern="^{}$".format(keys['HELP'])),
+                CallbackQueryHandler(status, pattern="^{}$".format(keys['STATUS'])),
             ],
         },
         fallbacks=[CommandHandler("start", start)],
