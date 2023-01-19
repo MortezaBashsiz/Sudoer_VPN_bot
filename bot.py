@@ -95,7 +95,7 @@ def get_url_byzone(conn, zone):
     cur.execute(sql, (f"%{zone_reg}%", ))
     conn.commit()
     result = cur.fetchone()
-    return 0 if result is None else result
+    return 0 if result is None else (zone_reg, result)
 
 def check_if_user_has_url(conn, id, zone):
     zone_reg = zone_map(zone)
@@ -270,7 +270,7 @@ async def get_config(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     user_url = check_if_user_has_url(conn, user.id, region)
 
     if user_url == 0:
-        url = get_url_byzone(conn, region)
+        zone_reg, url = get_url_byzone(conn, region)
         if url == 0:
             result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
             await update.callback_query.message.reply_text(result)
@@ -281,7 +281,7 @@ async def get_config(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
             """
             await update.callback_query.message.reply_text(result)
-            result=f"{url[0]}"
+            result=f"{zone_reg}:\n{url[0]}"
             await update.callback_query.message.reply_text(result)
     else:
         result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
@@ -376,15 +376,23 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.callback_query.from_user
     database = r"/opt/bot/bot.db"
     conn = create_connection(database)
+    cur = conn.cursor()
     urls = get_user_url_by_id(conn, user.id)
     query = update.callback_query
     text = """
     فیلترشکنهای زیر برای توست
     """
     await update.callback_query.message.reply_text(text)
-    for url in urls:
-        text=f"{url[0]}"
+    for row in urls:
+        url = row[0]
+        cur.execute("SELECT url, hostname FROM urls WHERE url = ?", (url,))
+        url_result = cur.fetchone()
+        url = url_result[0]
+        hostname = url_result[1]
+        text=f"{hostname}:\n{url}"
         await update.callback_query.message.reply_text(text)
+    conn.commit()
+    
 
 def main() -> None:
     application = Application.builder().token("numbernumbernumber:stringstringstringstring:").build()
