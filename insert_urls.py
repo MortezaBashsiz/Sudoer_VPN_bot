@@ -6,14 +6,12 @@ from datetime import datetime
 
 
 def create_connection(db_file):
-    conn = None
     try:
-        conn = sqlite3.connect(db_file)
-        return conn
+        return sqlite3.connect(db_file)
     except Error as e:
         print(e)
 
-    return conn
+    return None
 
 def main():
     csv_file= sys.argv[1] 

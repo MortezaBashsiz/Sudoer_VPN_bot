@@ -10,14 +10,12 @@ def create_connection(db_file):
     :param db_file: database file
     :return: Connection object or None
     """
-    conn = None
     try:
-        conn = sqlite3.connect(db_file)
-        return conn
+        return sqlite3.connect(db_file)
     except Error as e:
         print(e)
 
-    return conn
+    return None
 
 def create_table(conn, create_table_sql):
     """ create a table from the create_table_sql statement
@@ -34,19 +32,31 @@ def create_table(conn, create_table_sql):
 def db():
     database = r"/opt/bot/bot.db"
 
+    conn = create_connection(database)
+
+    if conn is not None:
+        _extracted_from_db_4(conn)
+    else:
+        print("Error! cannot create the database connection.")
+
+
+# TODO Rename this here and in `db`
+def _extracted_from_db_4(conn):
     sql_create_users_table = """ CREATE TABLE IF NOT EXISTS users (
                                     id integer PRIMARY KEY,
                                     name text NOT NULL,
                                     join_date text NOT NULL
                                 ); """
 
+    create_table(conn, sql_create_users_table)
     sql_create_urls_table = """CREATE TABLE IF NOT EXISTS urls (
                                     url text PRIMARY KEY,
                                     hostname text NOT NULL,
                                     issued_date text NOT NULL,
                                     used_count integer NOT NULL DEFAULT 0
                                 );"""
-    
+
+    create_table(conn, sql_create_urls_table)
     sql_create_user_url_table = """CREATE TABLE IF NOT EXISTS user_url (
                                     user integer NOT NULL,
                                     url integer NOT NULL,
@@ -55,14 +65,7 @@ def db():
                                     FOREIGN KEY (url) REFERENCES urls (id)
                                 );"""
 
-    conn = create_connection(database)
-
-    if conn is not None:
-        create_table(conn, sql_create_users_table)
-        create_table(conn, sql_create_urls_table)
-        create_table(conn, sql_create_user_url_table)
-    else:
-        print("Error! cannot create the database connection.")
+    create_table(conn, sql_create_user_url_table)
 
 def inc_url_used_count(conn, url):
     sql = "UPDATE urls SET used_count = used_count + 1 WHERE url = ?"
@@ -70,78 +73,44 @@ def inc_url_used_count(conn, url):
     cur.execute(sql, url)
     conn.commit()
 
+def zone_map(zone):
+    regions = {
+    "NUR": "scherehtznur",
+    "HEL": "scherehtzhel",
+    "FLK": "scherehtzflk",
+    "ARVSHN": "shanbe",
+    "ARVYEK": "yekshanbe",
+    "ARVDO": "doshanbe",
+    "ARVSE": "seshanbe",
+    "ARVCHAR": "charshanbe",
+    "ARVPANJ": "panjshanbe",
+    "ARVJOM": "jome"
+    }
+    return regions.get(zone)
+
 def get_url_byzone(conn, zone):
-    zone_reg="null"
-    if zone == "NUR":
-        zone_reg="scherehtznur"
-    if zone == "HEL":
-        zone_reg="scherehtzhel"
-    if zone == "FLK":
-        zone_reg="scherehtzflk"
-    if zone == "ARVSHN":
-        zone_reg=".shanbe"
-    if zone == "ARVYEK":
-        zone_reg="yekshanbe"
-    if zone == "ARVDO":
-        zone_reg="doshanbe"
-    if zone == "ARVSE":
-        zone_reg="seshanbe"
-    if zone == "ARVCHAR":
-        zone_reg="charshanbe"
-    if zone == "ARVPANJ":
-        zone_reg="panjshanbe"
-    if zone == "ARVJOM":
-        zone_reg="jome"
+    zone_reg = zone_map(zone)
     sql = "SELECT url FROM urls WHERE hostname LIKE ? AND used_count < 50 ORDER BY used_count  ASC, RANDOM() limit 1"
     cur = conn.cursor()
-    cur.execute(sql, ("%"+zone_reg+"%",))
+    cur.execute(sql, (f"%{zone_reg}%", ))
     conn.commit()
     result = cur.fetchone()
-    if result == None:
-        return 0
-    else:
-        return result
+    return 0 if result is None else result
 
 def check_if_user_has_url(conn, id, zone):
-    zone_reg="null"
-    if zone == "NUR":
-        zone_reg="scherehtznur"
-    if zone == "HEL":
-        zone_reg="scherehtzhel"
-    if zone == "FLK":
-        zone_reg="scherehtzflk"
-    if zone == "ARVSHN":
-        zone_reg=".shanbe"
-    if zone == "ARVYEK":
-        zone_reg="yekshanbe"
-    if zone == "ARVDO":
-        zone_reg="doshanbe"
-    if zone == "ARVSE":
-        zone_reg="seshanbe"
-    if zone == "ARVCHAR":
-        zone_reg="charshanbe"
-    if zone == "ARVPANJ":
-        zone_reg="panjshanbe"
-    if zone == "ARVJOM":
-        zone_reg="jome"
+    zone_reg = zone_map(zone)
     sql = ''' SELECT user_url.url FROM user_url LEFT JOIN urls ON user_url.url = urls.url WHERE user_url.user = ? AND urls.hostname like ? '''
     cur = conn.cursor()
-    cur.execute(sql, (id,"%"+zone_reg+"%"))
+    cur.execute(sql, (id, f"%{zone_reg}%"))
     conn.commit()
-    if len(cur.fetchall()) == 0:
-        return 0
-    else:
-        return cur.fetchone()
+    return 0 if len(cur.fetchall()) == 0 else cur.fetchone()
 
 def select_user_byid(conn, id):
     sql = ''' SELECT id FROM users where id = ? '''
     cur = conn.cursor()
     cur.execute(sql, (id,))
     conn.commit()
-    if len(cur.fetchall()) == 0:
-        return 0
-    else:
-        return cur.fetchone()
+    return 0 if len(cur.fetchall()) == 0 else cur.fetchone()
 
 def get_user_url_by_id(conn, id):
     sql = ''' SELECT url FROM user_url where user = ? '''
@@ -150,10 +119,7 @@ def get_user_url_by_id(conn, id):
     conn.commit()
     sql_result=cur.fetchall()
     result=""
-    if len(sql_result) != 0:
-        return sql_result
-    else:
-        return 0
+    return sql_result if len(sql_result) != 0 else 0
 
 def insert_user(conn, user):
     select_id=select_user_byid(conn, user[0])
@@ -220,20 +186,22 @@ keys = {
     "ASK" : "ASK",
     "HELP" : "HELP",
     "STATUS" : "STATUS",
-    # vpn regions
-    "NUR" : "NUR",
-    "FLK" : "FLK",
-    "HEL" : "HEL",
-    "ARV" : "ARV",
-    "ARVSHN" : "ARVSHN",
-    "ARVYEK" : "ARVYEK",
-    "ARVDO" : "ARVDO",
-    "ARVSE" : "ARVSE",
-    "ARVCHAR" : "ARVCHAR",
-    "ARVPANJ" : "ARVPANJ",
-    "ARVJOM" : "ARVJOM",
 }
 
+vpn_regions = {
+    "NUR": "NUR",
+    "FLK": "FLK",
+    "HEL": "HEL",
+    "ARV": "ARV",
+    "ARVSHN": "ARVSHN",
+    "ARVYEK": "ARVYEK",
+    "ARVDO": "ARVDO",
+    "ARVSE": "ARVSE",
+    "ARVCHAR": "ARVCHAR",
+    "ARVPANJ": "ARVPANJ",
+    "ARVJOM": "ARVJOM",
+}
+keys.update(vpn_regions)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.message.from_user
@@ -300,7 +268,7 @@ async def get_config(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     query = update.callback_query
     region = query.data.split(':')[1]
     user_url = check_if_user_has_url(conn, user.id, region)
-    
+
     if user_url == 0:
         url = get_url_byzone(conn, region)
         if url == 0:
@@ -309,7 +277,7 @@ async def get_config(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         else:
             inc_url_used_count(conn, url)
             insert_user_url(conn, user.id, url[0])
-            result=f"""
+            result = """
             مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
             """
             await update.callback_query.message.reply_text(result)
@@ -410,7 +378,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     conn = create_connection(database)
     urls = get_user_url_by_id(conn, user.id)
     query = update.callback_query
-    text=f"""
+    text = """
     فیلترشکنهای زیر برای توست
     """
     await update.callback_query.message.reply_text(text)
@@ -425,19 +393,17 @@ def main() -> None:
         entry_points=[CommandHandler("start", start)],
         states={
             START_ROUTES: [
-                
                 CallbackQueryHandler(get_config, pattern="^vpn:"),
-                CallbackQueryHandler(arv, pattern="^{}$".format(keys['ARV'])),
-                
-                CallbackQueryHandler(vpn, pattern="^{}$".format(keys['VPN'])),
-                CallbackQueryHandler(donate, pattern="^{}$".format(keys['DONATE'])),
-                CallbackQueryHandler(tether, pattern="^{}$".format(keys['TETHER'])),
-                CallbackQueryHandler(server, pattern="^{}$".format(keys['SERVER'])),
-                CallbackQueryHandler(euro, pattern="^{}$".format(keys['EURO'])),
-                CallbackQueryHandler(ask, pattern="^{}$".format(keys['ASK'])),
-                CallbackQueryHandler(help, pattern="^{}$".format(keys['HELP'])),
-                CallbackQueryHandler(status, pattern="^{}$".format(keys['STATUS'])),
-            ],
+                CallbackQueryHandler(arv, pattern=f"^{keys['ARV']}$"),
+                CallbackQueryHandler(vpn, pattern=f"^{keys['VPN']}$"),
+                CallbackQueryHandler(donate, pattern=f"^{keys['DONATE']}$"),
+                CallbackQueryHandler(tether, pattern=f"^{keys['TETHER']}$"),
+                CallbackQueryHandler(server, pattern=f"^{keys['SERVER']}$"),
+                CallbackQueryHandler(euro, pattern=f"^{keys['EURO']}$"),
+                CallbackQueryHandler(ask, pattern=f"^{keys['ASK']}$"),
+                CallbackQueryHandler(help, pattern=f"^{keys['HELP']}$"),
+                CallbackQueryHandler(status, pattern=f"^{keys['STATUS']}$"),
+            ]
         },
         fallbacks=[CommandHandler("start", start)],
     )
