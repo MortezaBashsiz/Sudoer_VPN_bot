@@ -313,7 +313,7 @@ async def get_config(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
             """
             await update.callback_query.message.reply_text(result)
-            result=f"{url[0]}"
+            result=f"`{url[0]}`"
             await update.callback_query.message.reply_text(result)
     else:
         result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
@@ -415,7 +415,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """
     await update.callback_query.message.reply_text(text)
     for url in urls:
-        text=f"{url[0]}"
+        text=f"`{url[0]}`"
         await update.callback_query.message.reply_text(text)
 
 def main() -> None:
