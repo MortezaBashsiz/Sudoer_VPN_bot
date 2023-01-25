@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import base64
 import sqlite3
 from sqlite3 import Error
 from datetime import datetime
@@ -376,7 +377,6 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.callback_query.from_user
     database = r"/opt/bot/bot.db"
     conn = create_connection(database)
-    cur = conn.cursor()
     urls = get_user_url_by_id(conn, user.id)
     query = update.callback_query
     text = """
@@ -385,14 +385,12 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.callback_query.message.reply_text(text)
     for row in urls:
         url = row[0]
-        cur.execute("SELECT url, hostname FROM urls WHERE url = ?", (url,))
-        url_result = cur.fetchone()
-        url = url_result[0]
-        hostname = url_result[1]
-        text=f"{hostname}:\n{url}"
-        await update.callback_query.message.reply_text(text)
-    conn.commit()
-    
+        decoded_url = base64.b64decode(url[8:]).decode()
+        if region := vpn_regions.get(decoded_url):
+            text = f"{region}:\n{url}"
+        else:
+            text = f"{url}"
+        await update.callback_query.message.reply_text(text)    
 
 def main() -> None:
     application = Application.builder().token("numbernumbernumber:stringstringstringstring:").build()
