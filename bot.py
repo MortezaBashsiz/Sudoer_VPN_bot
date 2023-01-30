@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import base64
+import json
 import sqlite3
 from sqlite3 import Error
 from datetime import datetime
@@ -245,14 +246,14 @@ async def vpn(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await query.answer()
     keyboard = [
         [
-            InlineKeyboardButton("ایران - داخلی", callback_data=keys['ARV']),
+            InlineKeyboardButton("ایران - داخلی", callback_data=vpn_regions['ARV']),
         ],
         [    
-            InlineKeyboardButton("آلمان - نورنبرگ", callback_data=f"vpn:{keys['NUR']}"),
+            InlineKeyboardButton("آلمان - نورنبرگ", callback_data=f"vpn:{vpn_regions['NUR']}"),
         ],
         [
-            InlineKeyboardButton("آلمان - فالکنشتاین", callback_data=f"vpn:{keys['FLK']}"),
-            InlineKeyboardButton("فنلاند - هلسینکی", callback_data=f"vpn:{keys['HEL']}"),
+            InlineKeyboardButton("آلمان - فالکنشتاین", callback_data=f"vpn:{vpn_regions['FLK']}"),
+            InlineKeyboardButton("فنلاند - هلسینکی", callback_data=f"vpn:{vpn_regions['HEL']}"),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -294,17 +295,17 @@ async def arv(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await query.answer()
     keyboard = [
         [
-            InlineKeyboardButton("شنبه", callback_data=f"vpn:{keys['ARVSHN']}"),
-            InlineKeyboardButton("یک شنبه", callback_data=f"vpn:{keys['ARVYEK']}"),
-            InlineKeyboardButton("دو شنبه", callback_data=f"vpn:{keys['ARVDO']}"),
+            InlineKeyboardButton("شنبه", callback_data=f"vpn:{vpn_regions['ARVSHN']}"),
+            InlineKeyboardButton("یک شنبه", callback_data=f"vpn:{vpn_regions['ARVYEK']}"),
+            InlineKeyboardButton("دو شنبه", callback_data=f"vpn:{vpn_regions['ARVDO']}"),
         ],
         [    
-            InlineKeyboardButton("سه شنبه", callback_data=f"vpn:{keys['ARVSE']}"),
-            InlineKeyboardButton("چهار شنبه", callback_data=f"vpn:{keys['ARVCHAR']}"),
-            InlineKeyboardButton("پنج شنبه", callback_data=f"vpn:{keys['ARVPANJ']}"),
+            InlineKeyboardButton("سه شنبه", callback_data=f"vpn:{vpn_regions['ARVSE']}"),
+            InlineKeyboardButton("چهار شنبه", callback_data=f"vpn:{vpn_regions['ARVCHAR']}"),
+            InlineKeyboardButton("پنج شنبه", callback_data=f"vpn:{vpn_regions['ARVPANJ']}"),
         ],
         [
-            InlineKeyboardButton("جمعه", callback_data=f"vpn:{keys['ARVJOM']}"),
+            InlineKeyboardButton("جمعه", callback_data=f"vpn:{vpn_regions['ARVJOM']}"),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -385,11 +386,8 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.callback_query.message.reply_text(text)
     for row in urls:
         url = row[0]
-        decoded_url = base64.b64decode(url[8:]).decode()
-        if region := vpn_regions.get(decoded_url):
-            text = f"{region}:\n{url}"
-        else:
-            text = f"{url}"
+        decoded_url = json.loads(base64.b64decode(url[8:]).decode())
+        text = f"{ps}:\n{url}" if (ps := decoded_url['ps']) else f"{url}"
         await update.callback_query.message.reply_text(text)    
 
 def main() -> None:
@@ -400,7 +398,7 @@ def main() -> None:
         states={
             START_ROUTES: [
                 CallbackQueryHandler(get_config, pattern="^vpn:"),
-                CallbackQueryHandler(arv, pattern=f"^{keys['ARV']}$"),
+                CallbackQueryHandler(arv, pattern=f"^{vpn_regions['ARV']}$"),
                 CallbackQueryHandler(vpn, pattern=f"^{keys['VPN']}$"),
                 CallbackQueryHandler(donate, pattern=f"^{keys['DONATE']}$"),
                 CallbackQueryHandler(tether, pattern=f"^{keys['TETHER']}$"),
