@@ -289,7 +289,7 @@ async def get_config(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
     if user_url == 0:
         zone_reg, url = get_url_byzone(conn, region)
-        if url:
+        if url is None:
             result = "متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
             await update.callback_query.message.reply_text(result)
         else:
