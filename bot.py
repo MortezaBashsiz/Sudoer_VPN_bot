@@ -1,10 +1,23 @@
 #!/usr/bin/env python
 
+import logging
+from telegram.ext import (
+    Application,
+    CallbackQueryHandler,
+    CommandHandler,
+    ContextTypes,
+    ConversationHandler,
+    MessageHandler,
+    filters,
+)
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import __version__ as TG_VER
 import base64
 import json
 import sqlite3
 from sqlite3 import Error
 from datetime import datetime
+
 
 def create_connection(db_file):
     """ create a database connection to the SQLite database
@@ -19,6 +32,7 @@ def create_connection(db_file):
 
     return None
 
+
 def create_table(conn, create_table_sql):
     """ create a table from the create_table_sql statement
     :param conn: Connection object
@@ -30,6 +44,7 @@ def create_table(conn, create_table_sql):
         c.execute(create_table_sql)
     except Error as e:
         print(e)
+
 
 def db():
     database = r"/opt/bot/bot.db"
@@ -69,26 +84,29 @@ def _extracted_from_db_4(conn):
 
     create_table(conn, sql_create_user_url_table)
 
+
 def inc_url_used_count(conn, url):
     sql = "UPDATE urls SET used_count = used_count + 1 WHERE url = ?"
     cur = conn.cursor()
     cur.execute(sql, url)
     conn.commit()
 
+
 def zone_map(zone):
     regions = {
-    "NUR": "scherehtznur",
-    "HEL": "scherehtzhel",
-    "FLK": "scherehtzflk",
-    "ARVSHN": "shanbe",
-    "ARVYEK": "yekshanbe",
-    "ARVDO": "doshanbe",
-    "ARVSE": "seshanbe",
-    "ARVCHAR": "charshanbe",
-    "ARVPANJ": "panjshanbe",
-    "ARVJOM": "jome"
+        "NUR": "scherehtznur",
+        "HEL": "scherehtzhel",
+        "FLK": "scherehtzflk",
+        "ARVSHN": "shanbe",
+        "ARVYEK": "yekshanbe",
+        "ARVDO": "doshanbe",
+        "ARVSE": "seshanbe",
+        "ARVCHAR": "charshanbe",
+        "ARVPANJ": "panjshanbe",
+        "ARVJOM": "jome"
     }
     return regions.get(zone)
+
 
 def get_url_byzone(conn, zone):
     zone_reg = zone_map(zone)
@@ -97,7 +115,8 @@ def get_url_byzone(conn, zone):
     cur.execute(sql, (f"%{zone_reg}%", ))
     conn.commit()
     result = cur.fetchone()
-    return 0 if result is None else (zone_reg, result)
+    return (zone_reg, result)
+
 
 def check_if_user_has_url(conn, id, zone):
     zone_reg = zone_map(zone)
@@ -107,6 +126,7 @@ def check_if_user_has_url(conn, id, zone):
     conn.commit()
     return 0 if len(cur.fetchall()) == 0 else cur.fetchone()
 
+
 def select_user_byid(conn, id):
     sql = ''' SELECT id FROM users where id = ? '''
     cur = conn.cursor()
@@ -114,17 +134,19 @@ def select_user_byid(conn, id):
     conn.commit()
     return 0 if len(cur.fetchall()) == 0 else cur.fetchone()
 
+
 def get_user_url_by_id(conn, id):
     sql = ''' SELECT url FROM user_url where user = ? '''
     cur = conn.cursor()
     cur.execute(sql, (id,))
     conn.commit()
-    sql_result=cur.fetchall()
-    result=""
+    sql_result = cur.fetchall()
+    result = ""
     return sql_result if len(sql_result) != 0 else 0
 
+
 def insert_user(conn, user):
-    select_id=select_user_byid(conn, user[0])
+    select_id = select_user_byid(conn, user[0])
     if (select_id != user[0]) and (select_id == 0):
         sql = ''' INSERT INTO users(id, name, join_date)
                   VALUES(?, ?, ?) '''
@@ -133,9 +155,10 @@ def insert_user(conn, user):
         conn.commit()
         return cur.lastrowid
 
+
 def insert_user_url(conn, user, url):
     current_dateTime = datetime.now()
-    user_url=[user, url, current_dateTime]
+    user_url = [user, url, current_dateTime]
     sql = ''' INSERT INTO user_url(user, url, issued_date)
               VALUES(?, ?, ?) '''
     cur = conn.cursor()
@@ -143,9 +166,6 @@ def insert_user_url(conn, user, url):
     conn.commit()
     return cur.lastrowid
 
-import logging
-
-from telegram import __version__ as TG_VER
 
 try:
     from telegram import __version_info__
@@ -159,16 +179,6 @@ if __version_info__ < (20, 0, 0, "alpha", 1):
         f"visit https://docs.python-telegram-bot.org/en/v{TG_VER}/examples.html"
     )
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import (
-    Application,
-    CallbackQueryHandler,
-    CommandHandler,
-    ContextTypes,
-    ConversationHandler,
-    MessageHandler,
-    filters,
-)
 
 # Enable logging
 logging.basicConfig(
@@ -178,18 +188,6 @@ logger = logging.getLogger(__name__)
 
 # Stages
 START_ROUTES, END_ROUTES = range(2)
-# Callback data
-keys = {
-    "VPN" : "VPN",
-    "DONATE" : "DONATE",
-    "EURO" : "EURO",
-    "TETHER" : "TETHER",
-    "SERVER" : "SERVER",
-    "ASK" : "ASK",
-    "HELP" : "HELP",
-    "STATUS" : "STATUS",
-}
-
 vpn_regions = {
     "NUR": "NUR",
     "FLK": "FLK",
@@ -203,7 +201,17 @@ vpn_regions = {
     "ARVPANJ": "ARVPANJ",
     "ARVJOM": "ARVJOM",
 }
-keys.update(vpn_regions)
+keys = {
+    "VPN": "VPN",
+    "DONATE": "DONATE",
+    "EURO": "EURO",
+    "TETHER": "TETHER",
+    "SERVER": "SERVER",
+    "ASK": "ASK",
+    "HELP": "HELP",
+    "STATUS": "STATUS",
+}
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.message.from_user
@@ -211,19 +219,21 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     current_dateTime = datetime.now()
     database = r"/opt/bot/bot.db"
     conn = create_connection(database)
-    user = [user.id, user.first_name , current_dateTime]
+    user = [user.id, user.first_name, current_dateTime]
     insert_user(conn, user)
     keyboard = [
         [
-            InlineKeyboardButton("میخوام کمک بکنم",       callback_data=keys['DONATE']),
-            InlineKeyboardButton("میخوام فیلترشکن بگیرم", callback_data=keys['VPN']),
+            InlineKeyboardButton("میخوام کمک بکنم",
+                                 callback_data=keys['DONATE']),
+            InlineKeyboardButton("میخوام فیلترشکن بگیرم",
+                                 callback_data=keys['VPN']),
         ],
         [InlineKeyboardButton("وضعیت من چیه؟", callback_data=keys['STATUS'])],
         [InlineKeyboardButton("راهنمای استفاده", callback_data=keys['HELP'])],
         [InlineKeyboardButton("سوال داشتم", callback_data=keys['ASK'])],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    textMsg="""
+    textMsg = """
 درود
 
 با توجه به اینکه محدودیت منابع داریم، لطفا به نکات زیر توجه کنید تا بتونیم همین فرمون رو بریم جلو و فیلترشکن‌ها رو پایدارتر بکنیم
@@ -240,20 +250,25 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text(textMsg, reply_markup=reply_markup)
     return START_ROUTES
 
+
 async def vpn(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Show new choice of buttons"""
     query = update.callback_query
     await query.answer()
     keyboard = [
         [
-            InlineKeyboardButton("ایران - داخلی", callback_data=vpn_regions['ARV']),
-        ],
-        [    
-            InlineKeyboardButton("آلمان - نورنبرگ", callback_data=f"vpn:{vpn_regions['NUR']}"),
+            InlineKeyboardButton(
+                "ایران - داخلی", callback_data=vpn_regions['ARV']),
         ],
         [
-            InlineKeyboardButton("آلمان - فالکنشتاین", callback_data=f"vpn:{vpn_regions['FLK']}"),
-            InlineKeyboardButton("فنلاند - هلسینکی", callback_data=f"vpn:{vpn_regions['HEL']}"),
+            InlineKeyboardButton(
+                "آلمان - نورنبرگ", callback_data=f"vpn:{vpn_regions['NUR']}"),
+        ],
+        [
+            InlineKeyboardButton("آلمان - فالکنشتاین",
+                                 callback_data=f"vpn:{vpn_regions['FLK']}"),
+            InlineKeyboardButton("فنلاند - هلسینکی",
+                                 callback_data=f"vpn:{vpn_regions['HEL']}"),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -262,8 +277,9 @@ async def vpn(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     )
     return START_ROUTES
 
+
 async def get_config(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    result=""
+    result = ""
     database = r"/opt/bot/bot.db"
     conn = create_connection(database)
     user = update.callback_query.from_user
@@ -273,8 +289,8 @@ async def get_config(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
     if user_url == 0:
         zone_reg, url = get_url_byzone(conn, region)
-        if url == 0:
-            result="متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
+        if url:
+            result = "متاسفانه این منطقه ظرفیتش تکمیل شده لطفا جاهای دیگه رو امتحان کن"
             await update.callback_query.message.reply_text(result)
         else:
             inc_url_used_count(conn, url)
@@ -283,11 +299,12 @@ async def get_config(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             مقدار url پایین رو کپی کنید و در برنامه اضافه بکنید
             """
             await update.callback_query.message.reply_text(result)
-            result=f"{zone_reg}:\n{url[0]}"
+            result = f"{zone_reg}:\n{url[0]}"
             await update.callback_query.message.reply_text(result)
     else:
-        result="تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
+        result = "تو قبلا از این منطقه فیلترشکن گرفتی برای اینکه ببینیش از منوی اصلی گزینه (وضعیت من چیه؟) رو انتخاب کن"
         await update.callback_query.message.reply_text(result)
+
 
 async def arv(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Show new choice of buttons"""
@@ -295,17 +312,24 @@ async def arv(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await query.answer()
     keyboard = [
         [
-            InlineKeyboardButton("شنبه", callback_data=f"vpn:{vpn_regions['ARVSHN']}"),
-            InlineKeyboardButton("یک شنبه", callback_data=f"vpn:{vpn_regions['ARVYEK']}"),
-            InlineKeyboardButton("دو شنبه", callback_data=f"vpn:{vpn_regions['ARVDO']}"),
-        ],
-        [    
-            InlineKeyboardButton("سه شنبه", callback_data=f"vpn:{vpn_regions['ARVSE']}"),
-            InlineKeyboardButton("چهار شنبه", callback_data=f"vpn:{vpn_regions['ARVCHAR']}"),
-            InlineKeyboardButton("پنج شنبه", callback_data=f"vpn:{vpn_regions['ARVPANJ']}"),
+            InlineKeyboardButton(
+                "شنبه", callback_data=f"vpn:{vpn_regions['ARVSHN']}"),
+            InlineKeyboardButton(
+                "یک شنبه", callback_data=f"vpn:{vpn_regions['ARVYEK']}"),
+            InlineKeyboardButton(
+                "دو شنبه", callback_data=f"vpn:{vpn_regions['ARVDO']}"),
         ],
         [
-            InlineKeyboardButton("جمعه", callback_data=f"vpn:{vpn_regions['ARVJOM']}"),
+            InlineKeyboardButton(
+                "سه شنبه", callback_data=f"vpn:{vpn_regions['ARVSE']}"),
+            InlineKeyboardButton(
+                "چهار شنبه", callback_data=f"vpn:{vpn_regions['ARVCHAR']}"),
+            InlineKeyboardButton(
+                "پنج شنبه", callback_data=f"vpn:{vpn_regions['ARVPANJ']}"),
+        ],
+        [
+            InlineKeyboardButton(
+                "جمعه", callback_data=f"vpn:{vpn_regions['ARVJOM']}"),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -322,8 +346,10 @@ async def donate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     keyboard = [
         [
             InlineKeyboardButton("دونیت با پول", callback_data=keys['EURO']),
-            InlineKeyboardButton("دونیت با کریپتو", callback_data=keys['TETHER']),
-            InlineKeyboardButton("دونیت با سرور", callback_data=keys['SERVER']),
+            InlineKeyboardButton(
+                "دونیت با کریپتو", callback_data=keys['TETHER']),
+            InlineKeyboardButton(
+                "دونیت با سرور", callback_data=keys['SERVER']),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -332,8 +358,9 @@ async def donate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     )
     return START_ROUTES
 
+
 async def euro(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    text="""
+    text = """
     هرچقدر که دوست داشتی میتونی بآ آدرس زیر برام دونیت کنی
     خیلی ممنونم که ازم حمایت میکنی
 
@@ -342,8 +369,9 @@ async def euro(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """
     await update.callback_query.message.reply_text(text)
 
+
 async def tether(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    text="""
+    text = """
     اینا هم برای کمک با کریپتو هست
     مرسی
 
@@ -354,15 +382,17 @@ async def tether(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """
     await update.callback_query.message.reply_text(text)
 
+
 async def server(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    text="""
+    text = """
     اگه دوست داری خودت سرور بگیری و دونیت کنی بآ آیدی زیر بهم پیام بده تا باهم صحبت کنیم
     @MortezaBashsiz
     """
     await update.callback_query.message.reply_text(text)
 
+
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    text="""
+    text = """
     توی آدرس زیر یه ویدیو گذاشتم که باهاش میتونی راحت فیلترشکنت رو تنظیم کنی
     https://t.me/sudoer_grp/615
     یه نگاه بنداز اگه نشد بهم با آیدی زیر پیام بده و مشکلت رو مطرح بکن
@@ -370,9 +400,11 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """
     await update.callback_query.message.reply_text(text)
 
+
 async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    text="اگه سوالی داری که با راهنما نتونستی حلش کنی به آیدی من @MortezaBashsiz پیام بده"
+    text = "اگه سوالی داری که با راهنما نتونستی حلش کنی به آیدی من @MortezaBashsiz پیام بده"
     await update.callback_query.message.reply_text(text)
+
 
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.callback_query.from_user
@@ -388,10 +420,12 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         url = row[0]
         decoded_url = json.loads(base64.b64decode(url[8:]).decode())
         text = f"{ps}:\n{url}" if (ps := decoded_url['ps']) else f"{url}"
-        await update.callback_query.message.reply_text(text)    
+        await update.callback_query.message.reply_text(text)
+
 
 def main() -> None:
-    application = Application.builder().token("numbernumbernumber:stringstringstringstring:").build()
+    application = Application.builder().token(
+        "numbernumbernumber:stringstringstringstring:").build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
@@ -415,7 +449,6 @@ def main() -> None:
     application.add_handler(conv_handler)
 
     application.run_polling()
-
 
 
 if __name__ == "__main__":
